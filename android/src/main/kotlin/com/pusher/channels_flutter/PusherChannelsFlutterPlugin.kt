@@ -177,7 +177,8 @@ class PusherChannelsFlutterPlugin : FlutterPlugin, MethodCallHandler, ActivityAw
     override fun authorize(channelName: String?, socketId: String?): String? {
         var result: String? = null
         val mutex = Semaphore(0)
-        activity!!.runOnUiThread {
+
+        activity?.runOnUiThread {
             methodChannel.invokeMethod("onAuthorizer", mapOf(
                 "channelName" to channelName,
                 "socketId" to socketId
@@ -199,7 +200,11 @@ class PusherChannelsFlutterPlugin : FlutterPlugin, MethodCallHandler, ActivityAw
                 }
             })
         }
-        mutex.acquire()
+
+        if (activity != null) {
+            mutex.acquire()
+        }
+
         return result
     }
 
