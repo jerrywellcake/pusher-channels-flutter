@@ -18,6 +18,7 @@ import io.flutter.plugin.common.MethodCall
 import io.flutter.plugin.common.MethodChannel
 import io.flutter.plugin.common.MethodChannel.MethodCallHandler
 import io.flutter.plugin.common.MethodChannel.Result
+import java.lang.Exception
 import java.net.InetSocketAddress
 import java.net.Proxy
 import java.util.concurrent.Semaphore
@@ -175,37 +176,45 @@ class PusherChannelsFlutterPlugin : FlutterPlugin, MethodCallHandler, ActivityAw
     }
 
     override fun authorize(channelName: String?, socketId: String?): String? {
-        var result: String? = null
-        val mutex = Semaphore(0)
+        val safeReturn = "{}"
+        try {
+            var result: String? = null
+            val mutex = Semaphore(0)
 
-        activity?.runOnUiThread {
-            methodChannel.invokeMethod("onAuthorizer", mapOf(
-                "channelName" to channelName,
-                "socketId" to socketId
-            ), object : Result {
-                override fun success(o: Any?) {
-                    if (o != null) {
-                        val gson = Gson()
-                        result = gson.toJson(o)
+            activity?.runOnUiThread {
+                methodChannel.invokeMethod("onAuthorizer", mapOf(
+                    "channelName" to channelName,
+                    "socketId" to socketId
+                ), object : Result {
+                    override fun success(o: Any?) {
+                        if (o != null) {
+                            val gson = Gson()
+                            result = gson.toJson(o)
+                        }
+                        mutex.release()
                     }
-                    mutex.release()
-                }
 
-                override fun error(s: String, s1: String?, o: Any?) {
-                    mutex.release()
-                }
+                    override fun error(s: String, s1: String?, o: Any?) {
+                        mutex.release()
+                    }
 
-                override fun notImplemented() {
-                    mutex.release()
-                }
-            })
+                    override fun notImplemented() {
+                        mutex.release()
+                    }
+                })
+            }
+
+            if (activity != null) {
+                mutex.acquire()
+            }
+
+            return if (result == null || result!!.isEmpty())
+                safeReturn
+            else
+                result
+        } catch (e: java.lang.Exception) {
+            return safeReturn
         }
-
-        if (activity != null) {
-            mutex.acquire()
-        }
-
-        return result
     }
 
     // Event handlers
