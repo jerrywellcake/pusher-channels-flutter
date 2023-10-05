@@ -208,7 +208,9 @@ class PusherChannelsFlutterPlugin : FlutterPlugin, MethodCallHandler, ActivityAw
             result = "{ }"
             mutex.release()
         }
-        mutex.acquire()
+        if (activity != null) {
+            mutex.acquire()
+        }
         return result
     }
 
